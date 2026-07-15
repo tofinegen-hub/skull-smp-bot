@@ -81,7 +81,9 @@ export default {
               ],
             }).catch(() => {});
           }
-        } catch (_) {}
+        } catch (err) {
+          console.error('Failed to timeout spamming member:', err);
+        }
       }
     }
 
