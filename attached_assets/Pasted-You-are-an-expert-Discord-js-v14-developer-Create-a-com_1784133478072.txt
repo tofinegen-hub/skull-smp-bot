@@ -1,0 +1,415 @@
+You are an expert Discord.js v14 developer. Create a complete, production-ready Discord bot for my Minecraft SMP called Skull SMP.
+
+The bot must automatically set up an entire professional Minecraft-themed Discord server from scratch.
+
+General Requirements
+Use Discord.js v14.
+Use slash commands.
+Use embeds everywhere.
+Use buttons and select menus where appropriate.
+Organize the code into folders (commands, events, utils, config, handlers, etc.).
+Use environment variables.
+Handle errors gracefully.
+Make every action configurable in a config file.
+Make the code clean and documented.
+Server Setup Command
+
+Create a command:
+
+/setupserver
+
+When executed by the owner, the bot should automatically create:
+
+Roles
+Categories
+Channels
+Permission overwrites
+Emojis (if available)
+Welcome embeds
+Rules
+Ticket system
+Verification
+Reaction roles
+
+Everything should be Minecraft themed.
+
+Categories
+
+Use fancy Unicode formatting.
+
+Example:
+
+══════「 📢 INFORMATION 」══════
+
+══════「 🌍 COMMUNITY 」══════
+
+══════「 🎮 MINECRAFT 」══════
+
+══════「 🛠 SUPPORT 」══════
+
+══════「 🤝 PARTNERS 」══════
+
+══════「 👑 STAFF 」══════
+
+══════「 📊 LOGS 」══════
+
+══════「 🔒 PRIVATE 」══════
+Information Channels
+📌・welcome
+📖・rules
+📢・announcements
+📅・updates
+📋・faq
+🎉・giveaways
+Community
+💬・general
+😂・memes
+📸・media
+🎥・content
+🤖・bots
+🎵・music
+🎙・voice-chat
+Minecraft
+🌍・server-chat
+📸・screenshots
+🎬・clips
+💡・suggestions
+🗳・polls
+📢・events
+Support
+🎫・create-ticket
+📨・appeals
+❓・help
+Partnerships
+🤝・partnership-info
+📢・partnerships
+Staff
+🛡・staff-chat
+📑・staff-apps
+📋・staff-logs
+
+Only staff can view these.
+
+Logs
+📜・join-logs
+📜・leave-logs
+📜・message-logs
+📜・mod-logs
+
+Only Server Manager and Owner.
+
+Roles
+
+Create these automatically in order.
+
+👑 Owner
+
+💀 Server Manager
+
+🟢 Moderator
+
+🟢 Trial Moderator
+
+🟣 Staff
+
+🟣 Trial Staff
+
+🤝 Partner Manager
+
+🎥 Creator
+
+⭐ Booster
+
+✅ Verified
+
+👤 Member
+
+🚫 Muted
+Role Colors
+
+Owner
+
+Gold
+
+Server Manager
+
+Dark Red
+
+Moderator
+
+Green
+
+Trial Moderator
+
+Light Green
+
+Staff
+
+Purple
+
+Trial Staff
+
+Pink
+
+Partner Manager
+
+Orange
+
+Creator
+
+Red
+
+Booster
+
+Pink
+
+Verified
+
+Light Blue
+
+Member
+
+Gray
+
+Muted
+
+Dark Gray
+
+Permission Configuration
+@everyone
+View Channels
+Read Message History
+
+NO:
+
+Send Messages
+Create Threads
+Mention Everyone
+Manage Messages
+Manage Roles
+Administrator
+Verified
+Send Messages
+Embed Links
+Attach Files
+Add Reactions
+Use External Emojis
+Use External Stickers
+Connect
+Speak
+Stream
+Trial Staff
+Manage Messages
+Timeout Members
+View Audit Log
+
+No Kick
+
+No Ban
+
+No Role Management
+
+Staff
+
+Everything Trial Staff
+
+Kick Members
+
+Manage Threads
+
+Trial Moderator
+
+Everything Staff
+
+Ban Members
+
+Moderate Members
+
+Move Members
+
+Mute Members
+
+Moderator
+
+Everything Trial Moderator
+
+Manage Nicknames
+
+Manage Events
+
+View Guild Insights
+
+Partner Manager
+
+Access ONLY:
+
+🤝 Partnership category
+
+Permissions:
+
+Manage Messages
+Send Messages
+Embed Links
+Attach Files
+
+No moderation permissions.
+
+Server Manager
+
+Everything Moderator
+
+Manage Roles
+
+Manage Channels
+
+Manage Webhooks
+
+Manage Emojis
+
+Manage Expressions
+
+Manage Events
+
+View Audit Logs
+
+NO Administrator.
+
+Owner
+
+Administrator
+
+Everything.
+
+Verification
+
+Create a verification system.
+
+# verify
+
+Embed
+
+Welcome to Skull SMP!
+
+Press Verify to gain access.
+
+[ Verify Button ]
+
+When clicked
+
+Give
+
+Verified
+
+Remove restrictions.
+
+Welcome System
+
+Beautiful Minecraft embed.
+
+Show:
+
+Server logo
+
+Member count
+
+Rules reminder
+
+Whitelist link
+
+Discord invite
+
+Ticket System
+
+Buttons
+
+General Support
+
+Player Report
+
+Staff Report
+
+Whitelist Help
+
+Bug Report
+
+Partnership
+
+Automatically create ticket channels.
+
+Auto Messages
+
+Create embeds in
+
+Rules
+
+FAQ
+
+Welcome
+
+Suggestions
+
+Partnership Info
+
+Staff Applications
+
+Nice Formatting
+
+Every embed should include
+
+Footer
+
+Skull SMP
+
+Timestamp
+
+Server icon
+
+Professional spacing
+
+Emojis
+
+Security
+
+Prevent duplicate channels.
+
+Prevent duplicate roles.
+
+Do not overwrite existing channels unless confirmed.
+
+Log every action.
+
+Extra Features
+
+Also include:
+
+AutoMod
+Anti-spam
+Anti-link
+Anti-raid
+Leveling system
+Welcome images
+Leave messages
+Reaction roles
+Server statistics channels
+Giveaway system
+Suggestion voting
+Poll system
+Staff application system
+Partnership application system
+Announcement command
+Slowmode command
+Lock/Unlock command
+Purge command
+Warn system
+Mute system
+Kick
+Ban
+Temporary Ban
+Temporary Mute
+Nickname logging
+Message logging
+Invite tracker
+Server backup command
+/setupserver should be re-runnable without creating duplicates.
+
+The end result should look like a polished, professional Minecraft SMP Discord server with consistent styling, secure permissions, and a clean hierarchy that's easy for members and staff to use.
