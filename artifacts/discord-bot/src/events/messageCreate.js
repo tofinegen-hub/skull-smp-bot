@@ -3,7 +3,7 @@
  * Handles: anti-spam, anti-link, anti-raid, leveling system.
  */
 
-import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import config from '../config/config.js';
 import db from '../utils/database.js';
 import { findChannel, isStaff } from '../utils/permissions.js';
@@ -108,7 +108,6 @@ export default {
         data.level += 1;
         db.setLevelData(message.guild.id, message.author.id, data);
 
-        // Announce level up
         await message.channel.send({
           embeds: [levelUpEmbed(member, data.level, message.guild)],
         }).catch(() => {});
