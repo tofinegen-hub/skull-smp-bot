@@ -7,19 +7,31 @@ import { loadCommands } from './handlers/commandHandler.js';
 import { loadEvents } from './handlers/eventHandler.js';
 import logger from './utils/logger.js';
 import 'dotenv/config';
+import http from 'node:http';
+
+// ─── Render Health Check Server ──────────────────────────────────────────────
+
+const PORT = process.env.PORT || 3000;
+
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Skull SMP Bot is running!');
+}).listen(PORT, () => {
+  console.log(`Health check server listening on port ${PORT}`);
+});
 
 // ─── Client Setup ────────────────────────────────────────────────────────────
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,      // Privileged — enable in Dev Portal → Bot → Server Members Intent
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.MessageContent,    // Privileged — enable in Dev Portal → Bot → Message Content Intent
+    GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
   ],
   partials: [
@@ -35,8 +47,8 @@ client.commands = new Collection();
 client.cooldowns = new Collection();
 
 // Anti-spam tracking
-client.spamMap = new Map();    // userId → { count, lastMessage, timestamps[] }
-client.raidMap = new Map();    // guildId → { recentJoins: [] }
+client.spamMap = new Map();
+client.raidMap = new Map();
 
 // ─── Load Handlers ───────────────────────────────────────────────────────────
 
