@@ -83,7 +83,7 @@ export function welcomeEmbed(member) {
       `> 📋 Get whitelisted: ${config.serverInfo.whitelistLink}\n`,
     )
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-    .setImage('https://i.imgur.com/tFVBJuJ.png') // Minecraft banner placeholder
+    .setImage('https://cdn.discordapp.com/attachments/1527008929849147605/1527080040204996708/content.png?ex=6a595b9d&is=6a580a1d&hm=ad5b8425e5b9ae757c99645a8706afcee9bc66e034417efac245bd6591731d78') // Minecraft banner placeholder
     .addFields({ name: '👥 Member Count', value: `You are member #**${guild.memberCount}**!`, inline: false })
     .setFooter({ text: config.footer.text, iconURL: guild.iconURL({ dynamic: true }) ?? undefined })
     .setTimestamp();
