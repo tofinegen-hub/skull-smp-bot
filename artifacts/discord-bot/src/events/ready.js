@@ -29,7 +29,7 @@ function startTempBanChecker(client) {
 }
 
 export default {
-  name: 'ready',
+  name: 'clientReady',
   once: true,
 
   async execute(client) {
