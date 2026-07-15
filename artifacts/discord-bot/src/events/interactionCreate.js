@@ -93,7 +93,7 @@ async function generateTranscript(channel) {
   `;
 
   for (const msg of sortedMessages) {
-    if (msg.author.bot && msg.components.length > 0 && msg.embeds.length > 0) continue; // Skip ticket control panel setups
+    if (msg.author.bot && msg.components.length > 0 && msg.embeds.length > 0) continue;
 
     const avatarURL = msg.author.displayAvatarURL({ extension: 'png' }) || 'https://discord.com/assets/1f0ecd0a6dd43f2a56d10c63a2cd92a1.svg';
     html += `
@@ -107,7 +107,6 @@ async function generateTranscript(channel) {
         <div class="text">${msg.cleanContent || ''}</div>
     `;
 
-    // Render embeds
     for (const embed of msg.embeds) {
       html += `
       <div class="embed" style="border-left-color: ${embed.hexColor || '#00b0f4'}">
@@ -117,7 +116,6 @@ async function generateTranscript(channel) {
       `;
     }
 
-    // Render attachments
     for (const attachment of msg.attachments.values()) {
       if (attachment.contentType && attachment.contentType.startsWith('image/')) {
         html += `<img class="attachment" src="${attachment.url}" alt="Attachment">`;
@@ -140,9 +138,6 @@ async function generateTranscript(channel) {
   return new AttachmentBuilder(Buffer.from(html, 'utf-8'), { name: `transcript-${channel.name}.html` });
 }
 
-/**
- * Send log message to designated ticket logs channel
- */
 async function sendTicketLog(guild, embed) {
   const logChannel = guild.channels.cache.find(c => c.name === '📜・ticket-logs' || c.name === 'ticket-logs');
   if (logChannel && logChannel.isTextBased()) {
@@ -166,7 +161,6 @@ export default {
         });
       }
 
-      // Cooldown check
       const { cooldowns } = client;
       if (!cooldowns.has(command.data.name)) cooldowns.set(command.data.name, new Map());
       const timestamps   = cooldowns.get(command.data.name);
@@ -265,7 +259,6 @@ export default {
     if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_type') {
       const ticketType = interaction.values[0];
 
-      // Find or create TICKETS category
       let ticketCategory = guild.channels.cache.find(
         (c) => c.type === ChannelType.GuildCategory && c.name === '🎫 TICKETS',
       );
@@ -277,7 +270,6 @@ export default {
         }).catch(() => null);
       }
 
-      // Safeguard against open ticket duplicates
       const allActiveChannels = guild.channels.cache.filter(c => c.parentId === ticketCategory?.id && c.type === ChannelType.GuildText);
       const userDuplicate = allActiveChannels.find(c => {
         const tInfo = db.getTicket ? db.getTicket(c.id) : null;
@@ -305,5 +297,16 @@ export default {
 
       const label = typeLabels[ticketType] ?? ticketType;
 
-      // Sequential Ticket Numbers Increment (Stored safely in DB)
-      let nextNumber =
+      let nextNumber = 1;
+      if (db.getTicketCounter) {
+        nextNumber = db.getTicketCounter() || 1;
+        db.incrementTicketCounter();
+      } else {
+        const rawTickets = db.getAllTickets ? db.getAllTickets() : [];
+        if (rawTickets && rawTickets.length > 0) {
+          nextNumber = rawTickets.length + 1;
+        }
+      }
+      const formattedNum = String(nextNumber).padStart(4, '0');
+
+      const permOver
