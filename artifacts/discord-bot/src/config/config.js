@@ -29,6 +29,19 @@ export const config = {
 
   // ─── Server Setup ─────────────────────────────────────────────────────────
   setup: {
+    /**
+     * Channel name patterns that /setupserver will NEVER delete or overwrite.
+     * These are channels owned/managed by other bots (ticket bots, welcome bots, etc.).
+     * Uses partial, case-insensitive matching — e.g. 'ticket-log' matches '📜・ticket-logs'.
+     * Add any channel names here that belong to another bot.
+     */
+    protectedChannelPatterns: [
+      'ticket-log',
+      'ticket-logs',
+      'transcript',
+      'transcripts',
+    ],
+
     // Role names — must match exactly when checking for duplicates
     roles: [
       { name: '👑 Owner',          color: 0xFFD700, hoist: true,  mentionable: false },
