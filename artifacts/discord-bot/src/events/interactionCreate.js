@@ -137,7 +137,7 @@ async function generateTranscript(channel) {
 }
 
 async function sendTicketLog(guild, embed) {
-  const logChannel = guild.channels.cache.find(c => c.name === '📜・ticket-logs' || c.name === 'ticket-logs');
+  const logChannel = guild.channels.cache.find(c => c.name === '📜・mod-logs' || c.name === 'mod-logs');
   if (logChannel && logChannel.isTextBased()) {
     await logChannel.send({ embeds: [embed] }).catch(() => {});
   }
@@ -553,9 +553,12 @@ export default {
           claimedString = claimedObj ? `${claimedObj.tag}` : `<@${ticket.claimedBy}>`;
         }
 
-        const logChannel = guild.channels.cache.find(c => c.name === '📜・ticket-logs' || c.name === 'ticket-logs');
+        // Search for your specific mod-logs channel (matching the exact name in your screenshot)
+        const logChannel = guild.channels.cache.find(c => c.name === '📜・mod-logs' || c.name === 'mod-logs');
         if (!logChannel) {
-          return interaction.editReply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Unable to find `#📜・ticket-logs` channel.')] });
+          return interaction.editReply({ 
+            embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Unable to find `#📜・mod-logs` channel.')] 
+          });
         }
 
         const transcriptEmbed = new EmbedBuilder()
@@ -572,12 +575,18 @@ export default {
           .setFooter({ text: config.footer.text })
           .setTimestamp();
 
+        // Send the file and embed straight to mod-logs
         await logChannel.send({ embeds: [transcriptEmbed], files: [transcriptAttachment] });
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(config.colors.success).setDescription(`✅ Transcript created and logged to ${logChannel}.`)] });
+        
+        await interaction.editReply({ 
+          embeds: [new EmbedBuilder().setColor(config.colors.success).setDescription(`✅ Transcript created and logged to ${logChannel}.`)] 
+        });
 
       } catch (err) {
         console.error('Error compiling transcript:', err);
-        await interaction.editReply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Error occurred building transcript compilation.')] });
+        await interaction.editReply({ 
+          embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Error occurred building transcript compilation.')] 
+        });
       }
       return;
     }
