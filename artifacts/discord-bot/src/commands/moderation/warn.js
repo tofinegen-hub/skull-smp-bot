@@ -37,7 +37,6 @@ export default {
       moderatorId: interaction.user.id,
     });
 
-    // DM the user
     try {
       await target.send({
         embeds: [
@@ -51,12 +50,10 @@ export default {
       });
     } catch (_) {}
 
-    // Reply
     await interaction.reply({
       embeds: [warnEmbed({ target: target.user, moderator: interaction.user, reason, warnCount: warns.length, guild: interaction.guild })],
     });
 
-    // Log to mod-logs
     const logChannel = findChannel(interaction.guild, '📜・mod-logs');
     if (logChannel) {
       await logChannel.send({
