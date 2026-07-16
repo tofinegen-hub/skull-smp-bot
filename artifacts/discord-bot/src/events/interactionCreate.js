@@ -285,6 +285,7 @@ export default {
         });
       }
 
+      // Updated to map the new staff-app value!
       const typeLabels = {
         general:       '🟢 General Support',
         report:        '🔴 Player Report',
@@ -292,6 +293,7 @@ export default {
         whitelist:     '⬜ Whitelist Help',
         bug:           '🐛 Bug Report',
         partnership:   '🤝 Partnership',
+        'staff-app':   '📝 Staff Application',
       };
 
       const label = typeLabels[ticketType] ?? ticketType;
@@ -352,16 +354,29 @@ export default {
 
       const controlPanel = createControlPanel();
 
+      // Dynamically display application questions if the ticket is a staff application
+      let descriptionText = `Welcome ${interaction.user} to Skull SMP Support! Please provide all necessary details below. A representative will be with you shortly.`;
+      
+      if (ticketType === 'staff-app') {
+        descriptionText = `Welcome ${interaction.user} to your **Staff Application**!\n\nPlease answer the following questions to submit your application:\n\n` +
+          `**1.** How old are you?\n` +
+          `**2.** What timezone are you in?\n` +
+          `**3.** Why do you want to join the Skull SMP Staff Team?\n` +
+          `**4.** What prior experience do you have?\n` +
+          `**5.** How active can you be weekly?\n\n` +
+          `*Please write your answers below. The Administrative team will review them soon!*`;
+      }
+
       const ticketEmbed = new EmbedBuilder()
         .setColor(config.colors.primary)
         .setTitle(`🎫 Ticket #${formattedNum} — ${label}`)
-        .setDescription(`Welcome ${interaction.user} to Skull SMP Support! Please provide all necessary details below. A representative will be with you shortly.`)
+        .setDescription(descriptionText)
         .addFields(
           { name: '👤 Opened By', value: `${interaction.user} (${interaction.user.tag})`, inline: true },
           { name: '📂 Category', value: label, inline: true },
           { name: '📈 Claim Status', value: 'Unclaimed', inline: true },
           { name: '🛡️ Staff Action Panel', value: 'Use the buttons below to coordinate control actions on this thread.' },
-          { name: '📝 User Instructions', value: 'Be patient, state details clearly, and upload any relevant files.' }
+          { name: '📝 User Instructions', value: ticketType === 'staff-app' ? 'Carefully fill out the application details above.' : 'Be patient, state details clearly, and upload any relevant files.' }
         )
         .setFooter({ text: `${config.footer.text} • Premium Ticketing Module`, iconURL: guild.iconURL({ dynamic: true }) ?? undefined })
         .setTimestamp();
