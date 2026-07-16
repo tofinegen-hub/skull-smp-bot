@@ -74,7 +74,7 @@ export default {
               embeds: [
                 new EmbedBuilder()
                   .setColor(config.colors.modlog)
-                  .setTitle('🤖  Auto-Mod: Spam')
+                  .setTitle('🤖 Auto-Mod: Spam')
                   .setDescription(`${member.user.tag} was auto-muted for spamming.`)
                   .setFooter({ text: config.footer.text })
                   .setTimestamp(),
@@ -98,8 +98,8 @@ export default {
       client._xpCooldowns.set(xpKey, Date.now());
 
       const earned = Math.floor(Math.random() * (xpPerMessage.max - xpPerMessage.min + 1)) + xpPerMessage.min;
-      const data   = db.getLevelData(message.guild.id, message.author.id);
-      data.xp      += earned;
+      const data = db.getLevelData(message.guild.id, message.author.id);
+      data.xp += earned;
       data.messages = (data.messages ?? 0) + 1;
 
       const xpNeeded = xpFormula(data.level);
