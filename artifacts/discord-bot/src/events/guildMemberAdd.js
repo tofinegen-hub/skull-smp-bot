@@ -27,7 +27,7 @@ export default {
         embeds: [
           new EmbedBuilder()
             .setColor(0x2ECC71)
-            .setTitle('👋  Member Joined')
+            .setTitle('👋 Member Joined')
             .setDescription(`${member.user.tag} joined the server.`)
             .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
             .addFields(
