@@ -1,8 +1,3 @@
-/**
- * Skull SMP — guildMemberAdd
- * Sends welcome embed and assigns Member role.
- */
-
 import { findChannel, findRole } from '../utils/permissions.js';
 import { welcomeEmbed } from '../utils/embeds.js';
 import logger from '../utils/logger.js';
@@ -13,13 +8,11 @@ export default {
   async execute(member) {
     const guild = member.guild;
 
-    // Assign Member role
     const memberRole = findRole(guild, '👤 Member');
     if (memberRole) {
       member.roles.add(memberRole).catch(() => {});
     }
 
-    // Send join log
     const joinLog = findChannel(guild, '📜・join-logs');
     if (joinLog) {
       const { EmbedBuilder } = await import('discord.js');
@@ -40,7 +33,6 @@ export default {
       }).catch(() => {});
     }
 
-    // Send welcome message
     const welcomeChannel = findChannel(guild, '📌・welcome');
     if (!welcomeChannel) return;
 
