@@ -1,8 +1,3 @@
-/**
- * Skull SMP — messageCreate
- * Handles: anti-spam, anti-link, anti-raid, leveling system.
- */
-
 import { EmbedBuilder } from 'discord.js';
 import config from '../config/config.js';
 import db from '../utils/database.js';
@@ -18,7 +13,6 @@ export default {
     const member = message.member;
     if (!member) return;
 
-    // ── Anti-Link ────────────────────────────────────────────────────────────
     if (config.antiLink.enabled && !isStaff(member)) {
       const urlRegex = /(https?:\/\/[^\s]+|discord\.gg\/[^\s]+)/gi;
       if (urlRegex.test(message.content)) {
@@ -41,7 +35,6 @@ export default {
       }
     }
 
-    // ── Anti-Spam ────────────────────────────────────────────────────────────
     if (!isStaff(member)) {
       const { maxMessages, intervalMs, muteDurationMs } = config.antiSpam;
       const key = `${message.guild.id}_${message.author.id}`;
@@ -87,7 +80,6 @@ export default {
       }
     }
 
-    // ── Leveling ─────────────────────────────────────────────────────────────
     const { xpPerMessage, xpCooldownMs, xpFormula } = config.leveling;
     const xpKey = `${message.guild.id}_${message.author.id}_xp_cooldown`;
 
