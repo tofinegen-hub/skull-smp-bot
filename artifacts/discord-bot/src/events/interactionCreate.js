@@ -285,7 +285,7 @@ export default {
         });
       }
 
-      // Updated to map the new staff-app value!
+      // ADDED 'staff-app' SUPPORT HERE
       const typeLabels = {
         general:       '🟢 General Support',
         report:        '🔴 Player Report',
@@ -354,9 +354,8 @@ export default {
 
       const controlPanel = createControlPanel();
 
-      // Dynamically display application questions if the ticket is a staff application
+      // Custom welcome text if they chose Staff Application
       let descriptionText = `Welcome ${interaction.user} to Skull SMP Support! Please provide all necessary details below. A representative will be with you shortly.`;
-      
       if (ticketType === 'staff-app') {
         descriptionText = `Welcome ${interaction.user} to your **Staff Application**!\n\nPlease answer the following questions to submit your application:\n\n` +
           `**1.** How old are you?\n` +
