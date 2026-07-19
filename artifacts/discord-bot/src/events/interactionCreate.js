@@ -285,7 +285,6 @@ export default {
         });
       }
 
-      // ADDED 'staff-app' SUPPORT HERE
       const typeLabels = {
         general:       '🟢 General Support',
         report:        '🔴 Player Report',
@@ -293,7 +292,6 @@ export default {
         whitelist:     '⬜ Whitelist Help',
         bug:           '🐛 Bug Report',
         partnership:   '🤝 Partnership',
-        'staff-app':   '📝 Staff Application',
       };
 
       const label = typeLabels[ticketType] ?? ticketType;
@@ -354,16 +352,12 @@ export default {
 
       const controlPanel = createControlPanel();
 
-      // Custom welcome text if they chose Staff Application
       let descriptionText = `Welcome ${interaction.user} to Skull SMP Support! Please provide all necessary details below. A representative will be with you shortly.`;
-      if (ticketType === 'staff-app') {
-        descriptionText = `Welcome ${interaction.user} to your **Staff Application**!\n\nPlease answer the following questions to submit your application:\n\n` +
-          `**1.** How old are you?\n` +
-          `**2.** What timezone are you in?\n` +
-          `**3.** Why do you want to join the Skull SMP Staff Team?\n` +
-          `**4.** What prior experience do you have?\n` +
-          `**5.** How active can you be weekly?\n\n` +
-          `*Please write your answers below. The Administrative team will review them soon!*`;
+      
+      if (ticketType === 'partnership') {
+        descriptionText = `Welcome ${interaction.user}! I'll guide you through the partnership questions one at a time — just reply in this channel.\n\n` +
+          `⚠️ Before we start, make sure you've read **🤝・partnership-info**.\n\n` +
+          `*Type anything below when you are ready to begin the questionnaire.*`;
       }
 
       const ticketEmbed = new EmbedBuilder()
@@ -375,7 +369,7 @@ export default {
           { name: '📂 Category', value: label, inline: true },
           { name: '📈 Claim Status', value: 'Unclaimed', inline: true },
           { name: '🛡️ Staff Action Panel', value: 'Use the buttons below to coordinate control actions on this thread.' },
-          { name: '📝 User Instructions', value: ticketType === 'staff-app' ? 'Carefully fill out the application details above.' : 'Be patient, state details clearly, and upload any relevant files.' }
+          { name: '📝 User Instructions', value: ticketType === 'partnership' ? 'Read the info channel and chat when ready to answer.' : 'Be patient, state details clearly, and upload any relevant files.' }
         )
         .setFooter({ text: `${config.footer.text} • Premium Ticketing Module`, iconURL: guild.iconURL({ dynamic: true }) ?? undefined })
         .setTimestamp();
@@ -385,6 +379,11 @@ export default {
         embeds: [ticketEmbed],
         components: [controlPanel],
       });
+
+      // Track multi-step info safely without breaking existing schema configurations
+      if (ticketType === 'partnership' && db.updateTicket) {
+        db.updateTicket(ticketChannel.id, { currentStep: 0, applicationAnswers: {} });
+      }
 
       await interaction.reply({
         embeds: [new EmbedBuilder().setColor(config.colors.success).setDescription(`✅ Your ticket has been successfully initialized: ${ticketChannel}`)],
@@ -567,7 +566,6 @@ export default {
           claimedString = claimedObj ? `${claimedObj.tag}` : `<@${ticket.claimedBy}>`;
         }
 
-        // Search for your specific mod-logs channel (matching the exact name in your screenshot)
         const logChannel = guild.channels.cache.find(c => c.name === '📜・mod-logs' || c.name === 'mod-logs');
         if (!logChannel) {
           return interaction.editReply({ 
@@ -589,7 +587,6 @@ export default {
           .setFooter({ text: config.footer.text })
           .setTimestamp();
 
-        // Send the file and embed straight to mod-logs
         await logChannel.send({ embeds: [transcriptEmbed], files: [transcriptAttachment] });
         
         await interaction.editReply({ 
@@ -601,6 +598,70 @@ export default {
         await interaction.editReply({ 
           embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Error occurred building transcript compilation.')] 
         });
+      }
+      return;
+    }
+
+    // ── Partnership Button Handlers (Approve / Decline Verdicts) ──────────────────
+    if (interaction.isButton() && (interaction.customId.startsWith('part_accept_') || interaction.customId.startsWith('part_deny_'))) {
+      if (!hasStaffPermissions(interaction.member)) {
+        return interaction.reply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Only staff members are allowed to decide partnership status.')], ephemeral: true });
+      }
+
+      const action = interaction.customId.startsWith('part_accept_') ? 'accepted' : 'denied';
+      const parts = interaction.customId.split('_');
+      const applicantId = parts[2];
+      const targetPing = parts[3];
+
+      await interaction.deferUpdate();
+
+      const baseEmbed = EmbedBuilder.from(interaction.message.embeds[0]);
+
+      if (action === 'accepted') {
+        baseEmbed.setColor(config.colors.success).setTitle('🤝 Partnership Application — APPROVED');
+        baseEmbed.addFields({ name: '⚡ Resolution Verdict', value: `Approved by ${interaction.user} (${interaction.user.tag})` });
+
+        await interaction.message.edit({ embeds: [baseEmbed], components: [] });
+
+        const serverNameField = baseEmbed.data.fields.find(f => f.name === 'Server Name')?.value || 'Unknown Server';
+        const inviteLinkField = baseEmbed.data.fields.find(f => f.name === 'Discord Invite')?.value || '';
+        const adTextField = baseEmbed.data.fields.find(f => f.name === 'Your Advertisement')?.value || '';
+
+        const partChannel = guild.channels.cache.find(c => c.name === '📢・partnerships' || c.name === 'partnerships');
+        if (partChannel && partChannel.isTextBased()) {
+          let pingContent = '';
+          if (targetPing === 'here') pingContent = '@here';
+          if (targetPing === 'everyone') pingContent = '@everyone';
+
+          const announcementEmbed = new EmbedBuilder()
+            .setColor('#5865F2')
+            .setTitle(`✨ New Partner: ${serverNameField}`)
+            .setDescription(`${adTextField}\n\n🔗 **Join Server:** ${inviteLinkField}`)
+            .setTimestamp()
+            .setFooter({ text: `Partnered with Skull SMP` });
+
+          await partChannel.send({ content: pingContent || undefined, embeds: [announcementEmbed] });
+        }
+
+        const applicantUser = await client.users.fetch(applicantId).catch(() => null);
+        if (applicantUser) {
+          await applicantUser.send({
+            embeds: [new EmbedBuilder().setColor(config.colors.success).setDescription(`🎉 Congratulations! Your partnership application for **${serverNameField}** has been accepted in **${guild.name}**!`)]
+          }).catch(() => {});
+        }
+
+      } else {
+        baseEmbed.setColor(config.colors.error).setTitle('🤝 Partnership Application — DENIED');
+        baseEmbed.addFields({ name: '❌ Resolution Verdict', value: `Denied by ${interaction.user} (${interaction.user.tag})` });
+
+        await interaction.message.edit({ embeds: [baseEmbed], components: [] });
+
+        const applicantUser = await client.users.fetch(applicantId).catch(() => null);
+        if (applicantUser) {
+          await applicantUser.send({
+            embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription(`⚠️ Hello, your partnership application submission inside **${guild.name}** was evaluated and declined by the management team.`)]
+          }).catch(() => {});
+        }
       }
       return;
     }
