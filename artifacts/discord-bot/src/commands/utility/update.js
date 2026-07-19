@@ -4,8 +4,8 @@
  */
 
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-\import db from '../../utils/database.js';
-import config from '../config/config.js';
+import db from '../../utils/database.js';
+import config from '../../config/config.js';
 
 export default {
   data: new SlashCommandBuilder()
