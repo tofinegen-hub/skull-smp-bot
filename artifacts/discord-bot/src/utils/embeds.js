@@ -83,7 +83,7 @@ export function welcomeEmbed(member) {
       `> 📋 Get whitelisted: ${config.serverInfo.whitelistLink}\n`,
     )
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-    .setImage('.setImage('attachment://welcome.png') // Minecraft banner placeholder
+    .setImage('attachment://welcome.png') // Minecraft banner placeholder
     .addFields({ name: '👥 Member Count', value: `You are member #**${guild.memberCount}**!`, inline: false })
     .setFooter({ text: config.footer.text, iconURL: guild.iconURL({ dynamic: true }) ?? undefined })
     .setTimestamp();
