@@ -1,8 +1,20 @@
-import { EmbedBuilder } from 'discord.js';
-import config from '../config/config.js';
+/**
+ * Skull SMP — messageCreate
+ * Processes text responses for ongoing partnership questionnaires.
+ */
+
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import db from '../utils/database.js';
-import { findChannel, isStaff } from '../utils/permissions.js';
-import { levelUpEmbed } from '../utils/embeds.js';
+import config from '../config/config.js';
+
+const QUESTIONS = [
+  '**Question 1 of 6 — Server Name**\nWhat is the name of your server?',
+  '**Question 2 of 6 — Discord Invite Link**\nWhat is your server\'s Discord invite link? (Make sure it does not expire)',
+  '**Question 3 of 6 — Server Type**\nWhat category best describes your server? (e.g. SMP, Parkour, Minigames)',
+  '**Question 4 of 6 — Advertisement Description**\nPlease send the exact advertisement text description for your server.',
+  '**Question 5 of 6 — Member Count**\nHow many members does your Discord server have?',
+  '**Question 6 of 6 — Screenshot Proof**\nPlease upload or attach a direct screenshot showing proof that you posted our advertisement inside your community.'
+];
 
 export default {
   name: 'messageCreate',
@@ -10,102 +22,148 @@ export default {
   async execute(message, client) {
     if (message.author.bot || !message.guild) return;
 
-    const member = message.member;
-    if (!member) return;
+    // Check if channel is an open ticket tracked in the DB
+    if (!db.getTicket) return;
+    const ticket = db.getTicket(message.channel.id);
+    if (!ticket || ticket.status === 'closed' || ticket.type !== 'partnership') return;
 
-    if (config.antiLink.enabled && !isStaff(member)) {
-      const urlRegex = /(https?:\/\/[^\s]+|discord\.gg\/[^\s]+)/gi;
-      if (urlRegex.test(message.content)) {
-        const domain = (message.content.match(urlRegex)?.[0] ?? '').replace('https://', '').replace('http://', '').split('/')[0];
-        const allowed = config.antiLink.allowedDomains.some((d) => domain.includes(d));
-        if (!allowed) {
-          await message.delete().catch(() => {});
-          const warn = await message.channel.send({
-            embeds: [
-              new EmbedBuilder()
-                .setColor(config.colors.error)
-                .setDescription(`🔗 ${member}, links are not allowed here.`)
-                .setFooter({ text: config.footer.text })
-                .setTimestamp(),
-            ],
-          });
-          setTimeout(() => warn.delete().catch(() => {}), 5000);
-          return;
-        }
+    // Fallbacks if data properties are undefined
+    if (ticket.currentStep === undefined) ticket.currentStep = 0;
+    if (!ticket.applicationAnswers) ticket.applicationAnswers = {};
+
+    let step = ticket.currentStep;
+
+    // User typing "cancel" stops the questionnaire loop
+    if (message.content.toLowerCase() === 'cancel') {
+      if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 });
+      return message.reply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Questionnaire closed.')] });
+    }
+
+    // Step 0 handles the activation phrase response
+    if (step === 0) {
+      ticket.currentStep = 1;
+      if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: 1 });
+      return message.channel.send(QUESTIONS[0]);
+    }
+
+    // Save data from current step
+    let currentInput = message.content;
+    if (step === 6) {
+      // Prioritize attached images or file links for question 6
+      const attachment = message.attachments.first();
+      if (attachment) {
+        currentInput = attachment.url;
+      } else if (!message.content.startsWith('http')) {
+        return message.reply('⚠️ Please upload a valid screenshot image attachment or send a direct file image URL link.');
       }
     }
 
-    if (!isStaff(member)) {
-      const { maxMessages, intervalMs, muteDurationMs } = config.antiSpam;
-      const key = `${message.guild.id}_${message.author.id}`;
-      const now = Date.now();
+    ticket.applicationAnswers[`step_${step}`] = currentInput;
+    
+    // Progress loop forward
+    step += 1;
+    ticket.currentStep = step;
 
-      if (!client.spamMap) client.spamMap = new Map();
-      let spam = client.spamMap.get(key) ?? { count: 0, timestamps: [] };
-
-      spam.timestamps = spam.timestamps.filter((t) => now - t < intervalMs);
-      spam.timestamps.push(now);
-      spam.count = spam.timestamps.length;
-      client.spamMap.set(key, spam);
-
-      if (spam.count >= maxMessages) {
-        client.spamMap.delete(key);
-        try {
-          await member.timeout(muteDurationMs, 'Auto-mute: Spam');
-          await message.channel.send({
-            embeds: [
-              new EmbedBuilder()
-                .setColor(config.colors.error)
-                .setDescription(`🔇 ${member}, you have been auto-muted for **5 minutes** for spamming.`)
-                .setFooter({ text: config.footer.text })
-                .setTimestamp(),
-            ],
-          });
-          const logCh = findChannel(message.guild, '📜・mod-logs');
-          if (logCh) {
-            await logCh.send({
-              embeds: [
-                new EmbedBuilder()
-                  .setColor(config.colors.modlog)
-                  .setTitle('🤖 Auto-Mod: Spam')
-                  .setDescription(`${member.user.tag} was auto-muted for spamming.`)
-                  .setFooter({ text: config.footer.text })
-                  .setTimestamp(),
-              ],
-            }).catch(() => {});
-          }
-        } catch (err) {
-          console.error('Failed to timeout spamming member:', err);
-        }
-      }
+    if (db.updateTicket) {
+      db.updateTicket(message.channel.id, { 
+        currentStep: step, 
+        applicationAnswers: ticket.applicationAnswers 
+      });
     }
 
-    const { xpPerMessage, xpCooldownMs, xpFormula } = config.leveling;
-    const xpKey = `${message.guild.id}_${message.author.id}_xp_cooldown`;
-
-    if (!client._xpCooldowns) client._xpCooldowns = new Map();
-    const lastXpTime = client._xpCooldowns.get(xpKey) ?? 0;
-
-    if (Date.now() - lastXpTime >= xpCooldownMs) {
-      client._xpCooldowns.set(xpKey, Date.now());
-
-      const earned = Math.floor(Math.random() * (xpPerMessage.max - xpPerMessage.min + 1)) + xpPerMessage.min;
-      const data = db.getLevelData(message.guild.id, message.author.id);
-      data.xp += earned;
-      data.messages = (data.messages ?? 0) + 1;
-
-      const xpNeeded = xpFormula(data.level);
-      if (data.xp >= xpNeeded) {
-        data.xp -= xpNeeded;
-        data.level += 1;
-        db.setLevelData(message.guild.id, message.author.id, data);
-
-        await message.channel.send({
-          embeds: [levelUpEmbed(member, data.level, message.guild)],
-        }).catch(() => {});
-      } else {
-        db.setLevelData(message.guild.id, message.author.id, data);
-      }
+    if (step <= QUESTIONS.length) {
+      // Send next text prompt
+      return message.channel.send(QUESTIONS[step - 1]);
     }
-  },
+
+    // Form complete logic kicks off here
+    if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 }); // locks the loop
+
+    // Extract values collected
+    const sName = ticket.applicationAnswers['step_1'];
+    const sInvite = ticket.applicationAnswers['step_2'];
+    const sType = ticket.applicationAnswers['step_3'];
+    const sAd = ticket.applicationAnswers['step_4'];
+    const sCountRaw = ticket.applicationAnswers['step_5'];
+    const sProof = ticket.applicationAnswers['step_6'];
+
+    const count = parseInt(sCountRaw.replace(/[^0-9]/g, '')) || 0;
+
+    // Fetch details dynamically from the invite link
+    let inviteVerificationString = 'Could not verify invite link automatically.';
+    try {
+      // Extract code from full link (e.g., https://discord.gg/GZNAYpw79k -> GZNAYpw79k)
+      const inviteCode = sInvite.split('/').pop();
+      const inviteData = await client.fetchInvite(inviteCode, { withCounts: true });
+      if (inviteData) {
+        inviteVerificationString = `**${inviteData.guild.name}** — ${inviteData.memberCount} members (${inviteData.presenceCount} online)`;
+      }
+    } catch (e) {
+      inviteVerificationString = `❌ Invalid or expired invite link provided.`;
+    }
+
+    // Determine target tier and recommendation mapping based on member counts
+    let pingTierString = '⚠️ Below Minimum Requirements (< 25)';
+    let recommendationPing = 'none';
+
+    if (count >= 25 && count <= 79) {
+      pingTierString = '🔹 **25–79 Members Tier**\n• We ping: `@here`';
+      recommendationPing = 'here';
+    } else if (count >= 80 && count <= 119) {
+      pingTierString = '🔸 **80–119 Members Tier**\n• We ping: `@everyone`';
+      recommendationPing = 'everyone';
+    } else if (count >= 120 && count <= 174) {
+      pingTierString = '⭐ **120–174 Members Tier**\n• We ping: `@everyone`';
+      recommendationPing = 'everyone';
+    } else if (count >= 175 && count <= 249) {
+      pingTierString = '💎 **175–249 Members Tier**\n• We ping: `@everyone`';
+      recommendationPing = 'everyone';
+    } else if (count >= 250) {
+      pingTierString = '👑 **Premium Partnership (250+ Members)**\n• Premium ping matching client preference choice.';
+      recommendationPing = 'everyone';
+    }
+
+    // Build the beautiful review embed layout sent to the staff
+    const submissionReviewEmbed = new EmbedBuilder()
+      .setColor('#5865F2') // Discord blurple styling
+      .setAuthor({ name: `${message.author.username}`, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
+      .setTitle('🤝 Partnership Application — Ready for Review')
+      .addFields(
+        { name: 'Server Name', value: sName, inline: false },
+        { name: 'Discord Invite', value: sInvite, inline: false },
+        { name: 'Server Category', value: sType, inline: false },
+        { name: 'Member Count', value: `${count}`, inline: false },
+        { name: 'Your Advertisement', value: sAd.substring(0, 1024), inline: false },
+        { name: 'Advertisement Proof', value: '(screenshot attached — see below)', inline: false },
+        { name: 'Invite Verification', value: inviteVerificationString, inline: false }
+      )
+      .setFooter({ text: `Applicant ID: ${message.author.id} • Verified members: ${count}` })
+      .setTimestamp();
+
+    if (sProof.startsWith('http')) {
+      submissionReviewEmbed.setImage(sProof);
+    }
+
+    // Interactive buttons for evaluation control panel action row
+    const choiceActionRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`part_accept_${message.author.id}_${recommendationPing}`)
+        .setLabel(`Approve (Ping: @${recommendationPing})`)
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`part_deny_${message.author.id}_none`)
+        .setLabel('Decline Application')
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    // Ping the staff team in the ticket channel and present the review dashboard layout
+    const staffRole = message.guild.roles.cache.find(r => r.name.toLowerCase().includes('staff') || r.name.toLowerCase().includes('moderator'));
+    const pingText = staffRole ? `<@&${staffRole.id}>` : '@staff team';
+
+    await message.channel.send({ 
+      content: pingText, 
+      embeds: [submissionReviewEmbed], 
+      components: [choiceActionRow] 
+    });
+  }
 };
