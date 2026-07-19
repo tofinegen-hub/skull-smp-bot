@@ -29,13 +29,13 @@ function hasStaffPermissions(member) {
 }
 
 /**
- * Creates the premium control panel action row.
+ * Creates the premium control panel action row matching your /update schema.
  */
 function createControlPanel(claimedBy = null) {
   const claimButton = new ButtonBuilder()
     .setCustomId('ticket_claim')
     .setLabel(claimedBy ? `Claimed by ${claimedBy}` : '👤 Claim Ticket')
-    .setStyle(ButtonStyle.Primary)
+    .setStyle(ButtonStyle.Success)
     .setDisabled(claimedBy !== null);
 
   const closeButton = new ButtonBuilder()
@@ -380,7 +380,6 @@ export default {
         components: [controlPanel],
       });
 
-      // Track multi-step info safely without breaking existing schema configurations
       if (ticketType === 'partnership' && db.updateTicket) {
         db.updateTicket(ticketChannel.id, { currentStep: 0, applicationAnswers: {} });
       }
@@ -415,16 +414,49 @@ export default {
         return interaction.reply({ embeds: [new EmbedBuilder().setColor(config.colors.warning).setDescription('⚠️ This ticket is already claimed.')], ephemeral: true });
       }
 
+      const ticketOwnerId = ticket ? ticket.userId : interaction.channel.topic?.split(':')[1];
+
       if (db.updateTicket) {
         db.updateTicket(interaction.channel.id, { claimedBy: interaction.user.id });
       }
+
+      // Lock down channel permissions: Only Creator, Claimer, and designated Operators can see/speak
+      const permOverwrites = [
+        {
+          id: guild.roles.everyone.id,
+          deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+        },
+        {
+          id: interaction.user.id,
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ManageMessages],
+        }
+      ];
+
+      if (ticketOwnerId) {
+        permOverwrites.push({
+          id: ticketOwnerId,
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles],
+        });
+      }
+
+      for (const rName of ALLOWED_STAFF_ROLES) {
+        const r = findRole(guild, rName);
+        if (r) {
+          permOverwrites.push({
+            id: r.id,
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.AttachFiles],
+          });
+        }
+      }
+
+      await interaction.channel.permissionOverwrites.set(permOverwrites).catch(console.error);
 
       const updatedPanel = createControlPanel(interaction.user.username);
       await interaction.message.edit({ components: [updatedPanel] }).catch(() => {});
 
       const claimEmbed = new EmbedBuilder()
         .setColor(config.colors.success)
-        .setDescription(`👤 This ticket has been claimed by ${interaction.user}.`)
+        .setDescription(`👤 This ticket has been claimed by ${interaction.user}. Speaking permissions are now locked to anyone else except the claimer and server operators.`)
         .setTimestamp();
 
       await interaction.reply({ embeds: [claimEmbed] });
@@ -432,7 +464,7 @@ export default {
       const logEmbed = new EmbedBuilder()
         .setColor(config.colors.primary)
         .setTitle('👤 Ticket Claimed')
-        .setDescription(`Ticket channel ${interaction.channel} has been claimed.`)
+        .setDescription(`Ticket channel ${interaction.channel} has been claimed and protected.`)
         .addFields(
           { name: 'Staff Member', value: `${interaction.user.tag}`, inline: true },
           { name: 'Channel', value: `${interaction.channel.name}`, inline: true }
