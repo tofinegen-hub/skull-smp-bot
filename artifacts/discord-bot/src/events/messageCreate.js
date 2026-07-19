@@ -4,7 +4,7 @@
  */
 
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js'; 
-import db from '../utils/database.js';
+import db from '../utils/database.js'; 
 import config from '../config/config.js';
 
 const QUESTIONS = [
