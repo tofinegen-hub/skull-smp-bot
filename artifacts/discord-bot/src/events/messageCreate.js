@@ -1,6 +1,6 @@
 /**
  * Skull SMP — messageCreate  
- * Processes text responses for ongoing partnership questionnaires.
+ * Processes text responses for ongoing partnership questionnaires. 
  */
 
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
