@@ -24,35 +24,28 @@ export default {
 
     if (!db.getTicket) return;
     const ticket = db.getTicket(message.channel.id);
-    
-    // Only process active partnership tickets
     if (!ticket || ticket.status === 'closed' || ticket.type !== 'partnership') return;
 
-    // Ensure step and answers objects exist
     if (ticket.currentStep === undefined) ticket.currentStep = 0;
     if (!ticket.applicationAnswers) ticket.applicationAnswers = {};
 
     let step = ticket.currentStep;
 
-    // Allow user to cancel the questionnaire
     if (message.content.toLowerCase() === 'cancel') {
       if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 });
       return message.reply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Questionnaire closed.')] });
     }
 
-    // Step -1 means the questionnaire is finished or cancelled, so ignore messages
     if (step === -1) return;
 
     // Step 0 triggers initial question prompt execution
     if (step === 0) {
+      ticket.currentStep = 1;
       if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: 1 });
       return message.channel.send(QUESTIONS[0]);
     }
 
-    // We are on Step 1 through 6, processing the user's answer
     let currentInput = message.content;
-    
-    // Special handling for the screenshot on step 6
     if (step === 6) {
       const attachment = message.attachments.first();
       if (attachment) {
@@ -62,23 +55,19 @@ export default {
       }
     }
 
-    // Save the answer for the current step
+    // Save current answer and increment immediately
     ticket.applicationAnswers[`step_${step}`] = currentInput;
-    
-    // Increment the step for the next question
-    step += 1;
+    const nextStep = step + 1;
+    ticket.currentStep = nextStep;
 
-    // Save the updated step and answers to the database
     if (db.updateTicket) {
-      db.updateTicket(message.channel.id, { currentStep: step, applicationAnswers: ticket.applicationAnswers });
+      db.updateTicket(message.channel.id, { currentStep: nextStep, applicationAnswers: ticket.applicationAnswers });
     }
 
-    // If there are more questions, send the next one
-    if (step <= QUESTIONS.length) {
-      return message.channel.send(QUESTIONS[step - 1]);
+    if (nextStep <= QUESTIONS.length) {
+      return message.channel.send(QUESTIONS[nextStep - 1]);
     }
 
-    // If we've reached this point, all 6 questions are answered. 
     // Clear step state to secure data locking
     if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 });
 
@@ -91,7 +80,6 @@ export default {
 
     const count = parseInt(sCountRaw.replace(/[^0-9]/g, '')) || 0;
 
-    // Direct automated Invite Verification query lookups
     let inviteVerificationString = 'Could not fetch invite live data.';
     try {
       const inviteCode = sInvite.split('/').pop();
@@ -103,7 +91,6 @@ export default {
       inviteVerificationString = `❌ Invalid or expired invite link.`;
     }
 
-    // Allocate recommendations tier based on raw input properties metrics
     let recommendationPing = 'none';
     if (count >= 25 && count <= 79) recommendationPing = 'here';
     if (count >= 80) recommendationPing = 'everyone';
