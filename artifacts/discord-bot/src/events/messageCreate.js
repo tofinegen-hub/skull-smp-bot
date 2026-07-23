@@ -10,7 +10,7 @@ import config from '../config/config.js';
 const QUESTIONS = [
   '**Question 1 of 6 — Server Name**\nWhat is the name of your server?',
   '**Question 2 of 6 — Discord Invite Link**\nWhat is your server\'s Discord invite link? (Make sure it does not expire)',
-  '**Question 3 of 6 — Minecraft Version & Category**\nWhat version and type is your server? (e.g. 1.21.11 SMP)',
+  '**Question 3 of 6 — Minecraft Version & Category**\nWhat version and type is your server? (e.g. 1.21.11 SMP)', 
   '**Question 4 of 6 — Your Advertisement**\nPlease send the exact advertisement text description for your server.',
   '**Question 5 of 6 — Member Count**\nHow many members does your Discord server have?',
   '**Question 6 of 6 — Advertisement Proof**\nPlease upload or attach a screenshot proving you posted our ad inside your community.'
