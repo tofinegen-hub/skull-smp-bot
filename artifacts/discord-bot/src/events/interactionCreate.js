@@ -343,7 +343,9 @@ export default {
         createdAt: new Date().toISOString(),
         ticketNumber: formattedNum,
         claimedBy: null,
-        status: 'open'
+        status: 'open',
+        currentStep: ticketType === 'partnership' ? 1 : 0,
+        applicationAnswers: {}
       };
 
       if (db.createTicket) {
@@ -355,9 +357,8 @@ export default {
       let descriptionText = `Welcome ${interaction.user} to Skull SMP Support! Please provide all necessary details below. A representative will be with you shortly.`;
       
       if (ticketType === 'partnership') {
-        descriptionText = `Welcome ${interaction.user}! I'll guide you through the partnership questions one at a time — just reply in this channel.\n\n` +
-          `⚠️ Before we start, make sure you've read **🤝・partnership-info**.\n\n` +
-          `*Type anything below when you are ready to begin the questionnaire.*`;
+        descriptionText = `Welcome ${interaction.user}! Please answer the questionnaire below step-by-step.\n\n` +
+          `⚠️ Make sure you have reviewed **🤝・partnership-info** before applying.`;
       }
 
       const ticketEmbed = new EmbedBuilder()
@@ -369,7 +370,7 @@ export default {
           { name: '📂 Category', value: label, inline: true },
           { name: '📈 Claim Status', value: 'Unclaimed', inline: true },
           { name: '🛡️ Staff Action Panel', value: 'Use the buttons below to coordinate control actions on this thread.' },
-          { name: '📝 User Instructions', value: ticketType === 'partnership' ? 'Read the info channel and chat when ready to answer.' : 'Be patient, state details clearly, and upload any relevant files.' }
+          { name: '📝 User Instructions', value: ticketType === 'partnership' ? 'Answer Question 1 below to get started.' : 'Be patient, state details clearly, and upload any relevant files.' }
         )
         .setFooter({ text: `${config.footer.text} • Premium Ticketing Module`, iconURL: guild.iconURL({ dynamic: true }) ?? undefined })
         .setTimestamp();
@@ -380,8 +381,11 @@ export default {
         components: [controlPanel],
       });
 
-      if (ticketType === 'partnership' && db.updateTicket) {
-        db.updateTicket(ticketChannel.id, { currentStep: 0, applicationAnswers: {} });
+      // Automatically send Question 1 for partnership applications right away
+      if (ticketType === 'partnership') {
+        await ticketChannel.send(
+          '**Question 1 of 6 — Server Name**\nWhat is the name of your server?'
+        );
       }
 
       await interaction.reply({
