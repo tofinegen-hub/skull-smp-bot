@@ -1,10 +1,10 @@
 /**
- * Skull SMP — messageCreate  
- * Processes text responses for ongoing partnership questionnaires. 
+ * Skull SMP — messageCreate
+ * Processes text responses for ongoing partnership questionnaires.
  */
 
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js'; 
-import db from '../utils/database.js'; 
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import db from '../utils/database.js';
 import config from '../config/config.js';
 
 const QUESTIONS = [
@@ -20,32 +20,30 @@ export default {
   name: 'messageCreate',
 
   async execute(message, client) {
+    // Ignore bots and non-guild messages
     if (message.author.bot || !message.guild) return;
 
     if (!db.getTicket) return;
     const ticket = db.getTicket(message.channel.id);
+    
+    // Only process active, open partnership tickets
     if (!ticket || ticket.status === 'closed' || ticket.type !== 'partnership') return;
 
-    if (ticket.currentStep === undefined) ticket.currentStep = 0;
+    // Default step to 1 if unset or 0
+    let step = (ticket.currentStep && ticket.currentStep > 0) ? ticket.currentStep : 1;
     if (!ticket.applicationAnswers) ticket.applicationAnswers = {};
 
-    let step = ticket.currentStep;
-
+    // Allow canceling
     if (message.content.toLowerCase() === 'cancel') {
       if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 });
-      return message.reply({ embeds: [new EmbedBuilder().setColor(config.colors.error).setDescription('❌ Questionnaire closed.')] });
+      return message.reply({ embeds: [new EmbedBuilder().setColor(config.colors.error || '#FF0000').setDescription('❌ Questionnaire closed.')] });
     }
 
-    if (step === -1) return;
-
-    // Step 0 triggers initial question prompt execution
-    if (step === 0) {
-      ticket.currentStep = 1;
-      if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: 1 });
-      return message.channel.send(QUESTIONS[0]);
-    }
+    if (step === -1) return; // Finished or closed
 
     let currentInput = message.content;
+
+    // Question 6 requires attachment/link validation
     if (step === 6) {
       const attachment = message.attachments.first();
       if (attachment) {
@@ -55,8 +53,10 @@ export default {
       }
     }
 
-    // Save current answer and increment immediately
+    // Save answer for the current active step
     ticket.applicationAnswers[`step_${step}`] = currentInput;
+
+    // Advance step pointer
     const nextStep = step + 1;
     ticket.currentStep = nextStep;
 
@@ -64,11 +64,12 @@ export default {
       db.updateTicket(message.channel.id, { currentStep: nextStep, applicationAnswers: ticket.applicationAnswers });
     }
 
+    // Send the next question if available
     if (nextStep <= QUESTIONS.length) {
       return message.channel.send(QUESTIONS[nextStep - 1]);
     }
 
-    // Clear step state to secure data locking
+    // All questions answered — lock questionnaire state
     if (db.updateTicket) db.updateTicket(message.channel.id, { currentStep: -1 });
 
     const sName = ticket.applicationAnswers['step_1'];
@@ -78,8 +79,9 @@ export default {
     const sCountRaw = ticket.applicationAnswers['step_5'];
     const sProof = ticket.applicationAnswers['step_6'];
 
-    const count = parseInt(sCountRaw.replace(/[^0-9]/g, '')) || 0;
+    const count = parseInt((sCountRaw || '0').replace(/[^0-9]/g, '')) || 0;
 
+    // Fetch live invite statistics
     let inviteVerificationString = 'Could not fetch invite live data.';
     try {
       const inviteCode = sInvite.split('/').pop();
